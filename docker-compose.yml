@@ -1,0 +1,58 @@
+version: "3.9"
+
+services:
+  nginx:
+    image: nginx:1.25-alpine
+    ports:
+      - "80:80"
+    volumes:
+      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - go
+      - frontend
+
+  go:
+    build:
+      context: .
+      dockerfile: docker/go/Dockerfile
+    volumes:
+      - ./backend:/app
+    environment:
+      - DB_HOST=mysql
+      - DB_PORT=3306
+      - DB_USER=trip_user
+      - DB_PASSWORD=trip_pass
+      - DB_NAME=trip_road
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+  frontend:
+    image: node:20-alpine
+    working_dir: /app
+    volumes:
+      - ./frontend:/app
+    command: sh -c "npm install && npm run dev -- --host 0.0.0.0"
+    environment:
+      - VITE_API_URL=http://localhost/api
+
+  mysql:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: root_pass
+      MYSQL_DATABASE: trip_road
+      MYSQL_USER: trip_user
+      MYSQL_PASSWORD: trip_pass
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./docker/mysql/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "trip_user", "-ptrip_pass"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  mysql_data:
