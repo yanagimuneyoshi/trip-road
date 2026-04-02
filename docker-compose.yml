@@ -15,8 +15,6 @@ services:
     build:
       context: .
       dockerfile: docker/go/Dockerfile
-    volumes:
-      - ./backend:/app
     environment:
       - DB_HOST=mysql
       - DB_PORT=3306
