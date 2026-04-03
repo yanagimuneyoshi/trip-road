@@ -4,8 +4,10 @@ RUN apk add --no-cache git
 
 WORKDIR /app
 
-COPY backend/ .
+COPY backend/go.mod ./
+RUN go mod download || true
 
+COPY backend/ .
 RUN go mod tidy && go build -o server .
 
 EXPOSE 8080
