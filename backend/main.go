@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -23,11 +24,16 @@ func initDB() {
 		os.Getenv("DB_NAME"),
 	)
 	var err error
-	db, err = sqlx.Connect("mysql", dsn)
-	if err != nil {
-		log.Fatalf("DB接続エラー: %v", err)
+	for i := 1; i <= 20; i++ {
+		db, err = sqlx.Connect("mysql", dsn)
+		if err == nil {
+			log.Println("DB接続成功")
+			return
+		}
+		log.Printf("DB接続待機中... (%d/20): %v", i, err)
+		time.Sleep(3 * time.Second)
 	}
-	log.Println("DB接続成功")
+	log.Fatalf("DB接続エラー: %v", err)
 }
 
 func main() {
